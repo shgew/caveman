@@ -1,7 +1,7 @@
 {
   "name": "caveman-opencode-plugin",
   "version": "0.1.0",
-  "description": "caveman plugin for opencode — terse mode tracking + slash commands",
+  "description": "caveman plugin for opencode — self-contained ESM (inlined ruleset + config helpers, zero runtime npm deps); persona injection, mode tracking, slash commands",
   "type": "module",
   "main": "plugin.js",
   "private": true
