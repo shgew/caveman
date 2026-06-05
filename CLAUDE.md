@@ -60,9 +60,10 @@ caveman/
 │   └── mcp-servers/             # caveman-shrink npm-published MCP middleware
 │
 ├── .claude-plugin/              # Claude Code plugin manifest (REQUIRED at root)
-├── plugins/caveman/             # Claude Code plugin distribution (CI-mirrored)
+├── plugins/caveman/             # Claude Code + opencode plugin distributions
 │   ├── skills/                  # ← from skills/
-│   └── agents/                  # ← from agents/
+│   ├── agents/                  # ← from agents/
+│   └── opencode/                # opencode package distribution
 │
 ├── dist/                        # Build artifacts (gitignored)
 │   └── caveman.skill            # ZIP of skills/caveman/, rebuilt by CI
@@ -96,6 +97,7 @@ caveman/
 | `agents/cavecrew-reviewer.md` | Diff/file reviewer subagent (haiku). One-line findings with severity emoji. |
 | `src/plugins/opencode/plugin.js` | opencode native plugin. ESM Bun module — `session.created` writes flag, `tui.prompt.append` parses slash/natural-language activation and appends per-prompt reinforcement. Reuses `caveman-config.js` via `createRequire`. |
 | `src/plugins/opencode/commands/*.md` | Six opencode slash-command prompt templates (`/caveman`, `/caveman-{commit,review,compress,stats,help}`). |
+| `plugins/caveman/opencode/` | opencode plugin distribution package named `@juliusbrussee/opencode-caveman`. Mirrors `src/plugins/opencode/plugin.js` and `src/hooks/caveman-config.js`; do not edit mirrored runtime files directly. |
 
 ### Auto-generated / auto-synced — do not edit directly
 
@@ -111,6 +113,8 @@ What's left is the Claude Code plugin distribution (required by the plugin loade
 | `plugins/caveman/skills/caveman-compress/SKILL.md` (+ `scripts/`) | `skills/caveman-compress/SKILL.md` (+ `scripts/`) |
 | `plugins/caveman/skills/cavecrew/SKILL.md` | `skills/cavecrew/SKILL.md` |
 | `plugins/caveman/agents/cavecrew-*.md` | `agents/cavecrew-*.md` |
+| `plugins/caveman/opencode/plugin.js` | `src/plugins/opencode/plugin.js` |
+| `plugins/caveman/opencode/caveman-config.cjs` | `src/hooks/caveman-config.js` |
 | `dist/caveman.skill` | ZIP of `skills/caveman/` directory (gitignored; rebuilt by CI on release) |
 
 Skills not in this table (`caveman-commit`, `caveman-review`, `caveman-help`, `caveman-stats`) are not mirrored into the Claude Code plugin distribution by CI. They reach Claude Code through the standalone hook + skill install path, and reach other agents via `npx skills add`. A `plugins/caveman/skills/caveman-stats/` directory is currently checked in as a hand-committed copy; the sync workflow does not touch it, so don't rely on edits there to propagate.
@@ -242,7 +246,7 @@ How caveman reaches each agent type:
 | Claude Code | Plugin (hooks + skills) or standalone hooks | Yes — SessionStart hook injects rules |
 | Codex | Plugin in `plugins/caveman/` plus repo `.codex/hooks.json` and `.codex/config.toml` | Yes on macOS/Linux — SessionStart hook |
 | Gemini CLI | Extension with `GEMINI.md` context file | Yes — context file loads every session |
-| opencode | Native plugin (`src/plugins/opencode/`) copied into `~/.config/opencode/plugins/caveman/` + `AGENTS.md` ruleset + skills/agents/commands directories. Plugin uses `session.created` and `tui.prompt.append` lifecycle hooks. No statusline (opencode TUI exposes no plugin-writable badge). | Yes — `session.created` writes flag, `AGENTS.md` carries always-on ruleset |
+| opencode | Native plugin (`src/plugins/opencode/`) copied into `~/.config/opencode/plugins/caveman/` + `AGENTS.md` ruleset + skills/agents/commands directories. Plugin uses `session.created` and `tui.prompt.append` lifecycle hooks. No statusline (opencode TUI exposes no plugin-writable badge). Repo-level package parity lives at `plugins/caveman/opencode/` as `@juliusbrussee/opencode-caveman`; the installer still uses `src/plugins/opencode/` for local managed installs. | Yes — `session.created` writes flag, `AGENTS.md` carries always-on ruleset |
 | OpenClaw | Workspace skill at `~/.openclaw/workspace/skills/caveman/SKILL.md` (frontmatter merged with `version` + `always: true`) plus a marker-fenced bootstrap block in `~/.openclaw/workspace/SOUL.md`. Both writes go through `bin/lib/openclaw.js`; workspace path is overridable via `OPENCLAW_WORKSPACE`. | Yes — SOUL.md is auto-injected each turn under "Project Context" (subject to OpenClaw's 12K-per-file / 60K-total bootstrap caps) |
 | Cursor | `npx skills add ... -a cursor` (default via `--only cursor`) writes the upstream skill profile; per-repo `.cursor/rules/caveman.mdc` via `--with-init` (calls `src/tools/caveman-init.js`) | Yes — always-on rule |
 | Windsurf | `npx skills add ... -a windsurf` (default via `--only windsurf`); per-repo `.windsurf/rules/caveman.md` via `--with-init` | Yes — always-on rule |

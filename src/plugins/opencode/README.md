@@ -39,8 +39,13 @@ to `caveman-config.cjs` because this directory is `"type": "module"`) into
   from `~/.config/opencode/AGENTS.md` (also written by the installer) so
   the rules load even when the plugin runtime is broken.
 
-## Why no separate npm package
+## Distribution package
 
-Plugin code reuses `caveman-config.js` from the main repo. Shipping as an
-in-repo plugin avoids a second release cadence and a name collision with
-the existing third-party `opencode-caveman` npm package.
+`src/plugins/opencode/` remains the installer source of truth. The repo-level
+opencode package lives at `plugins/caveman/opencode/` with package name
+`@juliusbrussee/opencode-caveman`.
+
+That package mirrors `plugin.js` and `caveman-config.cjs` as real files so
+opencode can load caveman through local file/package plugin paths. We do not
+add a `.opencode-plugin` manifest because opencode documents plugin files and
+npm packages, not a Claude-style marketplace manifest.

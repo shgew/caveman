@@ -1,0 +1,37 @@
+{
+  "name": "@juliusbrussee/opencode-caveman",
+  "version": "0.1.0",
+  "description": "caveman plugin for opencode: terse mode tracking and slash commands",
+  "type": "module",
+  "main": "plugin.js",
+  "exports": "./plugin.js",
+  "license": "MIT",
+  "author": {
+    "name": "Julius Brussee",
+    "url": "https://github.com/JuliusBrussee"
+  },
+  "homepage": "https://github.com/JuliusBrussee/caveman",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/JuliusBrussee/caveman.git",
+    "directory": "plugins/caveman/opencode"
+  },
+  "bugs": {
+    "url": "https://github.com/JuliusBrussee/caveman/issues"
+  },
+  "keywords": [
+    "opencode",
+    "plugin",
+    "caveman",
+    "brevity",
+    "productivity"
+  ],
+  "files": [
+    "plugin.js",
+    "caveman-config.cjs",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=18"
+  }
+}

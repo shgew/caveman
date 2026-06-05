@@ -19,6 +19,7 @@ const REPO_ROOT = path.resolve(HERE, '..', '..');
 const INSTALLER = path.join(REPO_ROOT, 'bin', 'install.js');
 const requireCjs = createRequire(import.meta.url);
 const SETTINGS = requireCjs(path.join(REPO_ROOT, 'bin', 'lib', 'settings.js'));
+const OPENCODE_DIST = path.join(REPO_ROOT, 'plugins', 'caveman', 'opencode');
 
 const IS_WIN = process.platform === 'win32';
 
@@ -50,6 +51,80 @@ function pathWith(prependDir) {
   const sep = IS_WIN ? ';' : ':';
   return prependDir + sep + (process.env.PATH || '');
 }
+
+// ── 0. Repo-level opencode plugin distribution ───────────────────────────
+test('opencode distribution package exposes npm-compatible plugin files', () => {
+  for (const file of ['package.json', 'plugin.js', 'caveman-config.cjs', 'README.md']) {
+    assert.ok(fs.existsSync(path.join(OPENCODE_DIST, file)), `distribution ${file} missing`);
+  }
+
+  const pkg = JSON.parse(fs.readFileSync(path.join(OPENCODE_DIST, 'package.json'), 'utf8'));
+  assert.equal(pkg.name, '@juliusbrussee/opencode-caveman');
+  assert.equal(pkg.type, 'module');
+  assert.equal(pkg.main, 'plugin.js');
+  assert.notEqual(pkg.private, true, 'distribution package should not be marked private');
+  assert.deepEqual([...pkg.files].sort(), ['README.md', 'caveman-config.cjs', 'plugin.js']);
+
+  const sourcePlugin = fs.readFileSync(path.join(REPO_ROOT, 'src', 'plugins', 'opencode', 'plugin.js'), 'utf8');
+  const distPlugin = fs.readFileSync(path.join(OPENCODE_DIST, 'plugin.js'), 'utf8');
+  assert.equal(distPlugin, sourcePlugin, 'distribution plugin.js should match installer source');
+
+  const sourceConfig = fs.readFileSync(path.join(REPO_ROOT, 'src', 'hooks', 'caveman-config.js'), 'utf8');
+  const distConfig = fs.readFileSync(path.join(OPENCODE_DIST, 'caveman-config.cjs'), 'utf8');
+  assert.equal(distConfig, sourceConfig, 'distribution caveman-config.cjs should match shared config source');
+});
+
+test('opencode distribution package plugin handles caveman mode hooks', async () => {
+  const xdg = freshTmpDir();
+  const oldXdg = process.env.XDG_CONFIG_HOME;
+  const oldDefaultMode = process.env.CAVEMAN_DEFAULT_MODE;
+  try {
+    process.env.XDG_CONFIG_HOME = xdg;
+    delete process.env.CAVEMAN_DEFAULT_MODE;
+    const pluginPath = path.join(OPENCODE_DIST, 'plugin.js');
+    const flagPath = path.join(xdg, 'opencode', '.caveman-active');
+
+    const mod = await import(pathToFileURL(pluginPath).href);
+    const factory = mod.default || mod.CavemanPlugin;
+    const handlers = await factory({});
+
+    const out1 = await handlers['tui.prompt.append']({ prompt: '/caveman ultra' });
+    assert.equal(fs.readFileSync(flagPath, 'utf8'), 'ultra');
+    assert.ok(out1 && typeof out1.append === 'string', 'expected reinforcement append');
+    assert.match(out1.append, /CAVEMAN MODE ACTIVE \(ultra\)/);
+
+    const out2 = await handlers['tui.prompt.append']({ prompt: 'stop caveman please' });
+    assert.equal(fs.existsSync(flagPath), false, 'flag should be deleted after deactivation');
+    assert.equal(out2, undefined, 'no reinforcement when flag absent');
+
+    await handlers['session.created']();
+    assert.equal(fs.readFileSync(flagPath, 'utf8'), 'full');
+  } finally {
+    if (oldXdg === undefined) delete process.env.XDG_CONFIG_HOME;
+    else process.env.XDG_CONFIG_HOME = oldXdg;
+    if (oldDefaultMode === undefined) delete process.env.CAVEMAN_DEFAULT_MODE;
+    else process.env.CAVEMAN_DEFAULT_MODE = oldDefaultMode;
+    fs.rmSync(xdg, { recursive: true, force: true });
+  }
+});
+
+test('opencode docs describe distribution package parity', () => {
+  const claudeMd = fs.readFileSync(path.join(REPO_ROOT, 'CLAUDE.md'), 'utf8');
+  assert.match(claudeMd, /plugins\/caveman\/opencode/);
+  assert.match(claudeMd, /@juliusbrussee\/opencode-caveman/);
+
+  const installMd = fs.readFileSync(path.join(REPO_ROOT, 'INSTALL.md'), 'utf8');
+  assert.match(installMd, /@juliusbrussee\/opencode-caveman/);
+  assert.match(installMd, /file:\/\/\/absolute\/path\/to\/caveman\/plugins\/caveman\/opencode\/plugin\.js/);
+
+  const sourceReadme = fs.readFileSync(path.join(REPO_ROOT, 'src', 'plugins', 'opencode', 'README.md'), 'utf8');
+  assert.match(sourceReadme, /plugins\/caveman\/opencode/);
+  assert.match(sourceReadme, /@juliusbrussee\/opencode-caveman/);
+
+  const distReadme = fs.readFileSync(path.join(OPENCODE_DIST, 'README.md'), 'utf8');
+  assert.match(distReadme, /plugins\/caveman\/opencode/);
+  assert.match(distReadme, /@juliusbrussee\/opencode-caveman/);
+});
 
 // ── 1. Fresh install populates expected files ────────────────────────────
 test('opencode fresh install drops plugin, commands, agents, skills, AGENTS.md, opencode.json', () => {

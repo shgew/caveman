@@ -78,6 +78,8 @@ For "auto-activates? No" agents, type `/caveman` once per session (or use natura
 
 Full agent matrix (with detection rules) is in `bin/install.js` under the `PROVIDERS` array.
 
+Advanced opencode package path: this repo also ships `plugins/caveman/opencode/`, package name `@juliusbrussee/opencode-caveman`. Normal users should use `--only opencode` because it installs the plugin plus commands, agents, skills, and `AGENTS.md`. From a clone, opencode can load the package plugin directly with `"plugin": ["file:///absolute/path/to/caveman/plugins/caveman/opencode/plugin.js"]`; if the package is published later, use `"plugin": ["@juliusbrussee/opencode-caveman"]`.
+
 ## Manual install (no `curl | bash`)
 
 If you'd rather see exactly what runs:
@@ -240,7 +242,7 @@ The installer doesn't phone home. It writes to:
 - Your current working directory (only with `--with-init`) — repo-local rule files.
 - `~/.openclaw/workspace/` (only with `--only openclaw` or `--with-init` when OpenClaw is detected) — the one `--with-init` side-effect outside the cwd.
 
-No telemetry. No analytics. The installer's own code makes no network calls. Network requests do happen indirectly through the per-agent CLIs it shells out to — `claude plugin marketplace add`, `claude plugin install`, `gemini extensions install`, `npm view caveman-shrink`, and `npx -y skills add`. Each fetches from its own registry (Anthropic / GitHub / npm). Source: [`bin/install.js`](bin/install.js).
+No telemetry. No analytics. Network requests can happen indirectly through the per-agent CLIs the installer shells out to — `claude plugin marketplace add`, `claude plugin install`, `gemini extensions install`, `npm view caveman-shrink`, and `npx -y skills add`. Each fetches from its own registry (Anthropic / GitHub / npm). The installer can also fetch `src/tools/caveman-init.js` from GitHub when `--with-init` runs outside a local clone and no local init script is available. Loading `plugins/caveman/opencode/` from a local clone does not add a network request; publishing or npm installation of `@juliusbrussee/opencode-caveman` would use npm like any other opencode package plugin. Source: [`bin/install.js`](bin/install.js).
 
 ---
 

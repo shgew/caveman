@@ -386,7 +386,7 @@ async function installClaude(ctx) {
 
   // Plugin install (idempotent unless --force)
   let alreadyInstalled = false;
-  if (!opts.force) {
+  if (!opts.force && !opts.dryRun) {
     const r = captureSpawn('claude', ['plugin', 'list']);
     if (r.status === 0 && /caveman/i.test(r.stdout || '')) alreadyInstalled = true;
   }
