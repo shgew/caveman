@@ -108,6 +108,26 @@ test('opencode distribution package plugin handles caveman mode hooks', async ()
   }
 });
 
+test('opencode source wrapper exposes stable id and registers skills', async () => {
+  const pluginPath = path.join(REPO_ROOT, 'src', 'plugins', 'opencode', 'caveman.mjs');
+  const mod = await import(pathToFileURL(pluginPath).href);
+
+  assert.equal(mod.default.id, 'caveman');
+  assert.equal(typeof mod.default.server, 'function');
+
+  const hooks = await mod.default.server({});
+  assert.equal(typeof hooks.config, 'function');
+
+  const cfg = {};
+  await hooks.config(cfg);
+
+  assert.ok(Array.isArray(cfg.skills.paths), 'expected skills.paths array');
+  assert.ok(
+    cfg.skills.paths.includes(path.join(REPO_ROOT, 'skills')),
+    'expected repo skills path to be registered',
+  );
+});
+
 test('opencode docs describe distribution package parity', () => {
   const claudeMd = fs.readFileSync(path.join(REPO_ROOT, 'CLAUDE.md'), 'utf8');
   assert.match(claudeMd, /plugins\/caveman\/opencode/);
